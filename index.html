@@ -11,9 +11,9 @@
         .timetable-scroll { overflow-x: auto; padding-bottom: 1rem; }
         .timetable-grid {
             display: grid;
-            grid-template-columns: repeat(14, minmax(75px, 1fr));
+            grid-template-columns: repeat(14, minmax(80px, 1fr));
             gap: 4px;
-            min-width: 1100px;
+            min-width: 1150px;
         }
         .day-row {
             display: flex;
@@ -44,9 +44,9 @@
         .time-header-content {
             flex: 1;
             display: grid;
-            grid-template-columns: repeat(14, minmax(75px, 1fr));
+            grid-template-columns: repeat(14, minmax(80px, 1fr));
             gap: 4px;
-            min-width: 1100px;
+            min-width: 1150px;
         }
         .time-slot {
             font-size: 0.7rem;
@@ -70,9 +70,9 @@
             <div class="bg-white p-4 rounded shadow">
                 <h2 class="text-lg font-bold mb-2 border-b pb-1">Zobrazení možností</h2>
                 <p class="text-xs text-gray-600 mb-4 font-medium leading-snug">
-                    1. Zaškrtnutím zobrazíte všechny termíny.<br>
-                    2. Kliknutím do rozvrhu ukotvíte vybraný termín.<br>
-                    3. Odškrtnutím skryjete nevybrané varianty.
+                    1. Zaškrtnutím panelu zobrazíte všechny termíny.<br>
+                    2. Kliknutím ukotvíte volbu. Výběr nového termínu (stejného typu) ten starý automaticky smaže.<br>
+                    3. Odškrtnutím panelu skryjete nevybrané varianty.
                 </p>
                 <div class="flex flex-col gap-2">
                     <label v-for="subject in subjects" :key="subject.id" class="flex items-center gap-3 p-2 border rounded cursor-pointer hover:bg-gray-50 transition-colors">
@@ -85,7 +85,7 @@
                 </div>
                 
                 <button @click="clearAllSelections" class="mt-6 w-full bg-red-600 text-white hover:bg-red-700 text-sm font-bold py-2 px-4 rounded shadow transition">
-                    Smazat můj výběr (Reset)
+                    Smazat kompletní výběr
                 </button>
             </div>
         </div>
@@ -104,7 +104,7 @@
                     <div class="day-label">{{ day }}</div>
                     <div class="day-content timetable-grid">
                         
-                        <!-- Pozadí (100px min-height pro 4 řádky textu) -->
+                        <!-- Pozadí oddělující hodiny -->
                         <div v-for="n in 14" :key="n" class="border-l border-gray-100 min-h-[100px]" :style="{ gridColumn: n, gridRow: '1 / -1' }"></div>
                         
                         <!-- Datové bloky -->
@@ -196,57 +196,61 @@
                 selected: false
             });
 
-            // Extrakce dat (Skupina, Učebna, Vyučující)
+            // Přezkoumaná databáze s logicky opravenými délkami a oddělenou paritou týdnů
             const allBlocks = ref([
-                // Výroba a užití el. energie (1)
+                // Výroba a užití el. energie
                 createBlock(1, "pondělí", 6, 7, "P/01", "PORUA4", "Petrov J., Novák T., Král V."),
                 createBlock(1, "pondělí", 8, 9, "C/01", "PORUA4", "Petrov J., Novák T., Král V."),
 
-                // Angličtina III (2)
+                // Angličtina III
                 createBlock(2, "pondělí", 4, 5, "C/03", "PORJD359", "Illík P."),
                 createBlock(2, "úterý", 2, 3, "C/02", "PORJD357", "Matyášková G."),
                 createBlock(2, "úterý", 4, 5, "C/01", "PORD121", "Zapletalová A."),
                 createBlock(2, "středa", 2, 3, "C/04", "PORKA230", "Matyášková G."),
 
-                // Soft Skills I (3)
-                createBlock(3, "pondělí", 8, 8, "C/10", "POREB130", "Malčík M."),
-                createBlock(3, "pondělí", 10, 10, "C/01", "POREB130", "Miklošíková M."),
-                createBlock(3, "pondělí", 12, 12, "C/08", "POREB130", "Miklošíková M."),
-                createBlock(3, "úterý", 4, 4, "C/05", "POREB130", "Hauer T."),
-                createBlock(3, "úterý", 6, 6, "C/12", "POREB130", "Hauer T."),
-                createBlock(3, "úterý", 8, 8, "C/13", "POREB130", "Janíková M."),
-                createBlock(3, "středa", 0, 0, "C/02", "POREB130", "Hauer T."),
-                createBlock(3, "středa", 2, 2, "C/03", "POREB130", "Hauer T."),
-                createBlock(3, "středa", 4, 4, "C/14", "POREB130", "Zemčík T."),
-                createBlock(3, "středa", 6, 6, "C/06", "POREB130", "Zemčík T."),
-                createBlock(3, "čtvrtek", 4, 4, "C/04", "POREB130", "Janíková M."),
-                createBlock(3, "čtvrtek", 8, 8, "C/07", "POREB130", "Miklošíková M."),
-                createBlock(3, "čtvrtek", 10, 10, "C/11", "POREB130", "Miklošíková M."),
-                createBlock(3, "pátek", 0, 0, "C/09", "POREB130", "Malčík M."),
+                // Soft Skills I (Vše 2 bloky)
+                createBlock(3, "pondělí", 8, 9, "C/10", "POREB130", "Malčík M."),
+                createBlock(3, "pondělí", 10, 11, "C/01", "POREB130", "Miklošíková M."),
+                createBlock(3, "pondělí", 12, 13, "C/08", "POREB130", "Miklošíková M."),
+                createBlock(3, "úterý", 4, 5, "C/05", "POREB130", "Hauer T."),
+                createBlock(3, "úterý", 6, 7, "C/12", "POREB130", "Hauer T."),
+                createBlock(3, "úterý", 8, 9, "C/13", "POREB130", "Janíková M."),
+                createBlock(3, "středa", 0, 1, "C/02", "POREB130", "Hauer T."),
+                createBlock(3, "středa", 2, 3, "C/03", "POREB130", "Hauer T."),
+                createBlock(3, "středa", 4, 5, "C/14", "POREB130", "Zemčík T."),
+                createBlock(3, "středa", 6, 7, "C/06", "POREB130", "Zemčík T."),
+                createBlock(3, "čtvrtek", 4, 5, "C/04", "POREB130", "Janíková M."),
+                createBlock(3, "čtvrtek", 8, 9, "C/07", "POREB130", "Miklošíková M."),
+                createBlock(3, "čtvrtek", 10, 11, "C/11", "POREB130", "Miklošíková M."),
+                createBlock(3, "pátek", 0, 1, "C/09", "POREB130", "Malčík M."),
 
-                // Fyzika I (4)
-                createBlock(4, "pondělí", 2, 3, "L/03", "POREB236", "Gembalová L."),
-                createBlock(4, "pondělí", 2, 3, "L/01", "POREB238", "Šudý"),
+                // Fyzika I (Přednášky/Cvičení = 2 bloky, Laborky = 3 bloky)
+                createBlock(4, "pondělí", 2, 4, "L/03 (Sudý)", "POREB236", "Gembalová L."),
+                createBlock(4, "pondělí", 2, 4, "L/01 (Lichý)", "POREB238", "Chýlek J."),
                 createBlock(4, "pondělí", 2, 3, "C/03", "POREB113", "Chýlek J."),
-                createBlock(4, "pondělí", 4, 5, "L/04", "POREB236", "Gembalová L."),
-                createBlock(4, "pondělí", 4, 5, "L/02", "POREB238", "Šudý"),
-                createBlock(4, "pondělí", 4, 5, "C/02", "POREB113", "Chýlek J."),
-                createBlock(4, "pondělí", 8, 9, "L/05", "POREB236", "Gembalová L."),
-                createBlock(4, "pondělí", 8, 9, "L/06", "POREB238", "Šudý"),
-                createBlock(4, "pondělí", 8, 9, "C/01", "POREB113", "Chýlek J."),
+                createBlock(4, "pondělí", 6, 8, "L/04 (Sudý)", "POREB236", "Gembalová L."),
+                createBlock(4, "pondělí", 6, 8, "L/02 (Lichý)", "POREB238", "Chýlek J."),
+                createBlock(4, "pondělí", 6, 7, "C/02", "POREB113", "Chýlek J."),
+                createBlock(4, "pondělí", 8, 10, "L/05 (Sudý)", "POREB236", "Gembalová L."),
+                createBlock(4, "pondělí", 8, 10, "L/06 (Lichý)", "POREB238", "Chýlek J."),
+                createBlock(4, "pondělí", 10, 11, "C/01", "POREB113", "Chýlek J."),
                 createBlock(4, "úterý", 0, 1, "C/04", "POREB113", "Chýlek J."),
+                createBlock(4, "úterý", 0, 2, "L/11 (Lichý)", "POREB236", "Gembalová L."),
                 createBlock(4, "úterý", 2, 3, "P/05", "POREB128", "Gembalová L."),
                 createBlock(4, "úterý", 2, 3, "C/05", "POREB113", "Chýlek J."),
-                createBlock(4, "úterý", 4, 5, "L/10", "POREB236", "Gembalová L."),
-                createBlock(4, "úterý", 6, 7, "L/07", "POREB236", "Gembalová L."),
-                createBlock(4, "úterý", 8, 9, "L/08", "POREB236", "Gembalová L."),
-                createBlock(4, "středa", 4, 5, "L/12", "POREB236", "Gembalová L."),
+                createBlock(4, "úterý", 2, 4, "L/09 (Lichý)", "POREB236", "Gembalová L."),
+                createBlock(4, "úterý", 6, 8, "L/10 (Sudý)", "POREB236", "Gembalová L."),
+                createBlock(4, "úterý", 8, 10, "L/07 (Sudý)", "POREB236", "Gembalová L."),
+                createBlock(4, "úterý", 10, 12, "L/08 (Lichý)", "POREB236", "Gembalová L."),
+                createBlock(4, "středa", 4, 6, "L/12 (Sudý)", "POREB236", "Gembalová L."),
                 createBlock(4, "středa", 6, 7, "P/01", "POREBC1", "Životský O."),
+                createBlock(4, "středa", 6, 7, "P/02", "POREBC1", "Životský O."),
                 createBlock(4, "středa", 8, 9, "C/06", "POREB113", "Chýlek J."),
                 createBlock(4, "čtvrtek", 8, 9, "C/07", "POREB226", "Trocha P."),
+                createBlock(4, "čtvrtek", 8, 10, "L/13 (Lichý)", "POREB236", "Gembalová L."),
                 createBlock(4, "čtvrtek", 10, 11, "C/08", "POREB226", "Trocha P."),
 
-                // Matematická analýza 2 (5)
+                // Matematická analýza 2
                 createBlock(5, "pondělí", 5, 6, "P/02", "POREA155", "Krejčí P."),
                 createBlock(5, "pondělí", 8, 9, "C/03", "POREB135", "Krejčí P."),
                 createBlock(5, "pondělí", 10, 11, "C/04", "POREB135", "Krejčí P."),
@@ -258,11 +262,11 @@
                 createBlock(5, "čtvrtek", 3, 4, "C/07", "POREA155", "Krejčí P."),
                 createBlock(5, "čtvrtek", 8, 9, "C/08", "POREA155", "Krejčí P."),
 
-                // Vybrané kap. z el. strojů a přístrojů (6)
+                // Vybrané kap. z el. strojů a přístrojů
                 createBlock(6, "čtvrtek", 0, 1, "P/01", "POREC2", "Kačor P., Bernat P."),
                 createBlock(6, "čtvrtek", 3, 4, "C/01", "POREB018", "Kačor P., Bernat P."),
 
-                // Technická dokumentace (7)
+                // Technická dokumentace
                 createBlock(7, "úterý", 10, 11, "P/01", "POREB113", "Malčík M."),
                 createBlock(7, "čtvrtek", 0, 1, "C/07", "POREB219", "Malčík M."),
                 createBlock(7, "čtvrtek", 2, 3, "C/06", "POREB219", "Hrabovská K."),
@@ -270,7 +274,7 @@
                 createBlock(7, "čtvrtek", 7, 8, "C/03", "POREB219", "Hrabovská K."),
                 createBlock(7, "čtvrtek", 10, 11, "C/08", "POREB219", "Hrabovská K."),
 
-                // Technické vybavení budov (8)
+                // Technické vybavení budov
                 createBlock(8, "úterý", 4, 5, "P/01", "PORC5", "Kolář V."),
                 createBlock(8, "čtvrtek", 4, 5, "C/01", "POREB216", "Kolář V."),
                 createBlock(8, "čtvrtek", 7, 8, "C/02", "POREB216", "Kolář V.")
@@ -286,9 +290,21 @@
                 });
             };
 
+            // Jádro Mutex logiky (vzájemná exkluzivita pro stejný předmět a stejný typ výuky)
             const toggleBlock = (blockId) => {
-                const block = allBlocks.value.find(b => b.id === blockId);
-                if (block) block.selected = !block.selected;
+                const targetBlock = allBlocks.value.find(b => b.id === blockId);
+                if (!targetBlock) return;
+
+                if (targetBlock.selected) {
+                    targetBlock.selected = false;
+                } else {
+                    allBlocks.value.forEach(b => {
+                        if (b.subjectId === targetBlock.subjectId && b.type === targetBlock.type && b.selected) {
+                            b.selected = false;
+                        }
+                    });
+                    targetBlock.selected = true;
+                }
             };
 
             const clearAllSelections = () => {
