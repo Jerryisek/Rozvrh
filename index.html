@@ -3,128 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interaktivní Rozvrh VŠB-TUO</title>
+    <title>Interaktivní Rozvrh VŠB-TUO (Selekční)</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         [v-cloak] { display: none; }
-        .grid-table th, .grid-table td { min-width: 80px; }
+        .timetable-scroll { overflow-x: auto; padding-bottom: 1rem; }
+        .timetable-grid {
+            display: grid;
+            grid-template-columns: repeat(14, minmax(65px, 1fr));
+            gap: 4px;
+            min-width: 1000px;
+        }
+        .day-row {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .day-label {
+            flex: 0 0 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background-color: #f3f4f6;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            border-right: 1px solid #e5e7eb;
+        }
+        .day-content {
+            flex: 1;
+            padding: 8px;
+            position: relative;
+        }
+        .time-header {
+            display: flex;
+            padding-left: 80px;
+            background-color: #e5e7eb;
+            border-bottom: 2px solid #d1d5db;
+        }
+        .time-header-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(14, minmax(65px, 1fr));
+            gap: 4px;
+            min-width: 1000px;
+        }
+        .time-slot {
+            font-size: 0.7rem;
+            text-align: center;
+            font-weight: 600;
+            padding: 4px 0;
+            color: #4b5563;
+        }
     </style>
 </head>
-<body class="bg-gray-100 p-6 font-sans text-gray-800">
+<body class="bg-gray-50 p-4 md:p-6 font-sans text-gray-800">
 
-<div id="app" v-cloak class="max-w-7xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-gray-900 border-b-2 border-gray-300 pb-2">Interaktivní tvůrce rozvrhu</h1>
+<div id="app" v-cloak class="max-w-[1400px] mx-auto">
+    <h1 class="text-2xl md:text-3xl font-bold mb-6 text-gray-900 border-b-2 border-gray-300 pb-2">Plánovač rozvrhu</h1>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="flex flex-col lg:flex-row gap-6">
         
-        <div class="lg:col-span-1 flex flex-col gap-6">
-            
+        <!-- Panel s předměty (Filtry) -->
+        <div class="lg:w-64 flex flex-col gap-4 shrink-0">
             <div class="bg-white p-4 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4 border-b pb-1">Seznam předmětů</h2>
+                <h2 class="text-lg font-bold mb-3 border-b pb-1">Zobrazit předměty</h2>
+                <p class="text-xs text-gray-500 mb-3">Zaškrtnutím zobrazíte dostupné termíny. Kliknutím v rozvrhu je potvrdíte.</p>
                 <div class="flex flex-col gap-2">
                     <label v-for="subject in subjects" :key="subject.id" class="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50 transition-colors">
                         <input type="checkbox" v-model="subject.visible" class="w-4 h-4 text-blue-600 rounded">
-                        <input type="color" v-model="subject.color" class="w-6 h-6 p-0 border-0 rounded cursor-pointer">
-                        <span class="text-sm font-medium leading-tight select-none" :class="{ 'opacity-50 line-through': !subject.visible }">
+                        <input type="color" v-model="subject.color" class="w-5 h-5 p-0 border-0 rounded cursor-pointer shrink-0">
+                        <span class="text-xs font-semibold leading-tight select-none truncate" :class="{ 'opacity-40': !subject.visible }">
                             {{ subject.name }}
                         </span>
                     </label>
                 </div>
-            </div>
-
-            <div class="bg-white p-4 rounded shadow">
-                <h2 class="text-xl font-semibold mb-4 border-b pb-1">Přidat rozvrhovou akci</h2>
-                <form @submit.prevent="addClass" class="flex flex-col gap-3">
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Předmět</label>
-                        <select v-model="newForm.subjectId" class="w-full border rounded p-1 text-sm" required>
-                            <option value="" disabled>Vyberte předmět...</option>
-                            <option v-for="s in subjects" :value="s.id">{{ s.name }}</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Typ</label>
-                            <select v-model="newForm.type" class="w-full border rounded p-1 text-sm" required>
-                                <option value="Přednáška">Přednáška (P)</option>
-                                <option value="Cvičení">Cvičení (C)</option>
-                                <option value="Laboratoř">Laboratoř (L)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Místnost</label>
-                            <input type="text" v-model="newForm.room" placeholder="např. POREB130" class="w-full border rounded p-1 text-sm" required>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Den</label>
-                        <select v-model="newForm.day" class="w-full border rounded p-1 text-sm" required>
-                            <option v-for="day in days" :value="day">{{ day }}</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Od</label>
-                            <select v-model="newForm.start" class="w-full border rounded p-1 text-sm" required>
-                                <option v-for="(time, index) in timeBlocks" :value="index">{{ time }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Do</label>
-                            <select v-model="newForm.end" class="w-full border rounded p-1 text-sm" required>
-                                <option v-for="(time, index) in timeBlocks" :value="index">{{ time }}</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="mt-2 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
-                        Přidat do rozvrhu
-                    </button>
-                    <p v-if="errorMsg" class="text-red-600 text-xs mt-1 font-bold">{{ errorMsg }}</p>
-                </form>
+                
+                <button @click="clearSelection" class="mt-6 w-full bg-red-100 text-red-700 hover:bg-red-200 text-sm font-bold py-2 px-4 rounded transition">
+                    Zrušit všechny výběry
+                </button>
             </div>
         </div>
 
-        <div class="lg:col-span-3 bg-white p-4 rounded shadow overflow-x-auto">
-            <table class="grid-table w-full border-collapse text-sm text-center">
-                <thead>
-                    <tr>
-                        <th class="border bg-gray-200 p-2 w-20">Den</th>
-                        <th v-for="time in timeBlocks" :key="time" class="border bg-gray-200 p-1 text-xs font-medium whitespace-nowrap">
-                            {{ time }}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="day in days" :key="day">
-                        <td class="border bg-gray-100 font-bold p-2 uppercase text-xs">{{ day }}</td>
+        <!-- Mřížka rozvrhu -->
+        <div class="flex-1 bg-white rounded shadow overflow-hidden">
+            <div class="timetable-scroll">
+                
+                <!-- Hlavička s časy -->
+                <div class="time-header">
+                    <div class="time-header-content">
+                        <div v-for="time in timeBlocks" :key="time" class="time-slot">{{ time }}</div>
+                    </div>
+                </div>
+
+                <!-- Dny v týdnu -->
+                <div v-for="day in days" :key="day" class="day-row">
+                    <div class="day-label">{{ day }}</div>
+                    <div class="day-content timetable-grid">
                         
-                        <template v-for="(cell, index) in computedGrid[day]" :key="index">
-                            <td v-if="cell === null" class="border border-gray-200 p-2"></td>
+                        <!-- Pozadí mřížky pro vizuální orientaci -->
+                        <div v-for="n in 14" :key="n" class="border-l border-gray-100 min-h-[60px]" :style="{ gridColumn: n, gridRow: '1 / -1' }"></div>
+                        
+                        <!-- Karty rozvrhových akcí -->
+                        <div v-for="opt in getVisibleOptions(day)" :key="opt.id"
+                             @click="opt.selected = !opt.selected"
+                             :style="{
+                                gridColumn: `${opt.startIdx + 1} / span ${opt.endIdx - opt.startIdx + 1}`,
+                                backgroundColor: opt.selected ? opt.subject.color : 'transparent',
+                                borderColor: opt.subject.color,
+                                color: opt.selected ? getContrastYIQ(opt.subject.color) : '#1f2937'
+                             }"
+                             class="relative border-2 rounded p-1 cursor-pointer transition-all z-10 flex flex-col justify-center overflow-hidden hover:scale-[1.02]"
+                             :class="{ 
+                                'opacity-70 border-dashed bg-white': !opt.selected, 
+                                'shadow-md ring-2 ring-offset-1': opt.selected,
+                                'ring-gray-800': opt.selected
+                             }">
+                             
+                            <div class="font-bold text-[10px] md:text-xs truncate leading-tight">{{ opt.subject.shortName }}</div>
+                            <div class="text-[9px] md:text-[10px] mt-0.5 font-medium leading-tight opacity-90">{{ opt.type }} | {{ opt.room }}</div>
                             
-                            <td v-else-if="cell !== 'skip'" 
-                                :colspan="cell.span" 
-                                class="border border-gray-300 p-2 relative group"
-                                :style="{ backgroundColor: cell.subject.color, color: getContrastYIQ(cell.subject.color) }">
-                                
-                                <div class="font-bold text-xs truncate mb-1">{{ cell.subject.name }}</div>
-                                <div class="text-xs opacity-90">{{ cell.cls.type }} | {{ cell.cls.room }}</div>
-                                
-                                <button @click="removeClass(cell.subject.id, cell.cls.id)" 
-                                        class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Odstranit akci">
-                                    &times;
-                                </button>
-                            </td>
-                        </template>
-                    </tr>
-                </tbody>
-            </table>
+                            <!-- Indikátor výběru -->
+                            <div v-if="opt.selected" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-white opacity-50"></div>
+                        </div>
+
+                    </div>
+                </div>
+                
+            </div>
         </div>
 
     </div>
@@ -135,123 +141,145 @@
 
     createApp({
         setup() {
+            // Časové bloky (index 0 až 13)
             const timeBlocks = [
-                "7:15-8:00", "8:00-8:45", "9:00-9:45", "9:45-10:30", 
-                "10:45-11:30", "11:30-12:15", "12:30-13:15", "13:15-14:00", 
-                "14:15-15:00", "15:00-15:45", "16:00-16:45", "16:45-17:30", 
-                "17:45-18:30", "18:30-19:15"
+                "7:15", "8:00", "9:00", "9:45", 
+                "10:45", "11:30", "12:30", "13:15", 
+                "14:15", "15:00", "16:00", "16:45", 
+                "17:45", "18:30"
             ];
-            
             const days = ["pondělí", "úterý", "středa", "čtvrtek", "pátek"];
 
-            const subjects = ref([
-                { id: 1, name: "Výroba a užití elektrické energie", color: "#3b82f6", visible: true, classes: [] },
-                { id: 2, name: "Jazyk anglický III pro FEI", color: "#ef4444", visible: true, classes: [] },
-                { id: 3, name: "Soft Skills I", color: "#10b981", visible: true, classes: [] },
-                { id: 4, name: "Fyzika I", color: "#f59e0b", visible: true, classes: [] },
-                { id: 5, name: "Matematická analýza 2", color: "#8b5cf6", visible: true, classes: [] },
-                { id: 6, name: "Vybrané kap. z el. strojů a přístrojů", color: "#ec4899", visible: true, classes: [] },
-                { id: 7, name: "Technická dokumentace", color: "#14b8a6", visible: true, classes: [] },
-                { id: 8, name: "Technické vybavení budov", color: "#f97316", visible: true, classes: [] }
+            const subjectsData = [
+                { id: 1, name: "Výroba a užití el. energie", shortName: "Výroba el.", color: "#3b82f6", visible: true },
+                { id: 2, name: "Jazyk anglický III pro FEI", shortName: "Angličtina", color: "#ef4444", visible: true },
+                { id: 3, name: "Soft Skills I", shortName: "Soft Skills", color: "#10b981", visible: true },
+                { id: 4, name: "Fyzika I", shortName: "Fyzika I", color: "#f59e0b", visible: true },
+                { id: 5, name: "Matematická analýza 2", shortName: "Matika 2", color: "#8b5cf6", visible: true },
+                { id: 6, name: "Vybrané kap. z el. strojů", shortName: "El. stroje", color: "#ec4899", visible: true },
+                { id: 7, name: "Technická dokumentace", shortName: "Tech. dok.", color: "#14b8a6", visible: true },
+                { id: 8, name: "Technické vybavení budov", shortName: "Tech. budov", color: "#f97316", visible: true }
+            ];
+
+            const subjects = ref(subjectsData);
+
+            // Databáze všech bloků extrahovaná ze screenshotů
+            let blocksIdCounter = 0;
+            const createBlock = (subId, day, start, end, type, room) => ({
+                id: blocksIdCounter++,
+                subjectId: subId,
+                day: day,
+                startIdx: start,
+                endIdx: end,
+                type: type,
+                room: room,
+                selected: false
+            });
+
+            const allOptions = ref([
+                // Výroba a užití el. energie (1)
+                createBlock(1, "pondělí", 6, 7, "P", "P/01"),
+                createBlock(1, "pondělí", 8, 9, "C", "C/01"),
+
+                // Angličtina III (2)
+                createBlock(2, "pondělí", 4, 5, "C", "C/03"),
+                createBlock(2, "úterý", 2, 3, "C", "C/02"),
+                createBlock(2, "úterý", 4, 5, "C", "C/01"),
+                createBlock(2, "středa", 2, 3, "C", "C/04"),
+
+                // Soft Skills I (3) - vybraný průřez možnostmi
+                createBlock(3, "pondělí", 8, 8, "C", "C/10"),
+                createBlock(3, "pondělí", 10, 10, "C", "C/01"),
+                createBlock(3, "pondělí", 12, 12, "C", "C/08"),
+                createBlock(3, "úterý", 4, 4, "C", "C/05"),
+                createBlock(3, "úterý", 6, 6, "C", "C/12"),
+                createBlock(3, "úterý", 8, 8, "C", "C/13"),
+                createBlock(3, "středa", 0, 0, "C", "C/02"),
+                createBlock(3, "středa", 2, 2, "C", "C/03"),
+                createBlock(3, "středa", 4, 4, "C", "C/14"),
+                createBlock(3, "středa", 6, 6, "C", "C/06"),
+                createBlock(3, "čtvrtek", 4, 4, "C", "C/04"),
+                createBlock(3, "čtvrtek", 8, 8, "C", "C/07"),
+                createBlock(3, "čtvrtek", 10, 10, "C", "C/11"),
+                createBlock(3, "pátek", 0, 0, "C", "C/09"),
+
+                // Fyzika I (4)
+                createBlock(4, "pondělí", 2, 3, "P", "P/03"),
+                createBlock(4, "pondělí", 4, 5, "C", "C/04"),
+                createBlock(4, "pondělí", 6, 7, "L", "L/04"),
+                createBlock(4, "pondělí", 8, 9, "L", "L/05"),
+                createBlock(4, "úterý", 0, 1, "C", "C/06"),
+                createBlock(4, "úterý", 2, 3, "P", "P/05"),
+                createBlock(4, "úterý", 4, 5, "L", "L/10"),
+                createBlock(4, "úterý", 6, 7, "L", "L/07"),
+                createBlock(4, "úterý", 8, 9, "L", "L/08"),
+                createBlock(4, "středa", 4, 5, "L", "L/12"),
+                createBlock(4, "středa", 6, 7, "P", "P/01"),
+                createBlock(4, "středa", 8, 9, "C", "C/01"),
+                createBlock(4, "čtvrtek", 2, 3, "C", "C/05"),
+                createBlock(4, "čtvrtek", 4, 5, "C", "C/03"),
+                createBlock(4, "čtvrtek", 6, 7, "C", "C/02"),
+                createBlock(4, "čtvrtek", 8, 9, "L", "L/06"),
+                createBlock(4, "čtvrtek", 10, 11, "L", "L/03"),
+
+                // Matematická analýza 2 (5)
+                createBlock(5, "pondělí", 5, 6, "P", "P/02"),
+                createBlock(5, "pondělí", 7, 8, "C", "C/03"),
+                createBlock(5, "pondělí", 9, 10, "C", "C/04"),
+                createBlock(5, "úterý", 1, 2, "C", "C/02"),
+                createBlock(5, "úterý", 5, 6, "P", "P/01"),
+                createBlock(5, "úterý", 7, 8, "C", "C/05"),
+                createBlock(5, "středa", 5, 6, "C", "C/06"),
+                createBlock(5, "středa", 7, 8, "C", "C/01"),
+                createBlock(5, "čtvrtek", 3, 4, "C", "C/07"),
+                createBlock(5, "čtvrtek", 8, 9, "C", "C/08"),
+
+                // Vybrané kap. z el. strojů a přístrojů (6)
+                createBlock(6, "čtvrtek", 0, 1, "P", "P/01"),
+                createBlock(6, "čtvrtek", 3, 4, "C", "C/01"),
+
+                // Technická dokumentace (7)
+                createBlock(7, "úterý", 10, 11, "P", "P/01"),
+                createBlock(7, "čtvrtek", 0, 1, "C", "C/07"),
+                createBlock(7, "čtvrtek", 2, 3, "C", "C/06"),
+                createBlock(7, "čtvrtek", 5, 6, "C", "C/02"),
+                createBlock(7, "čtvrtek", 7, 8, "C", "C/03"),
+                createBlock(7, "čtvrtek", 10, 11, "C", "C/08"),
+
+                // Technické vybavení budov (8)
+                createBlock(8, "úterý", 4, 5, "P", "P/01"),
+                createBlock(8, "čtvrtek", 4, 5, "C", "C/01"),
+                createBlock(8, "čtvrtek", 7, 8, "C", "C/02")
             ]);
 
-            const newForm = ref({
-                subjectId: "",
-                type: "Cvičení",
-                room: "",
-                day: "pondělí",
-                start: 0,
-                end: 1
+            // Provázání bloků s aktuálním stavem předmětů
+            const enrichedOptions = computed(() => {
+                return allOptions.value.map(opt => {
+                    const sub = subjects.value.find(s => s.id === opt.subjectId);
+                    return { ...opt, subject: sub };
+                });
             });
 
-            const errorMsg = ref("");
-
-            // Výpočet mřížky na základě aktivních předmětů
-            const computedGrid = computed(() => {
-                let grid = {};
-                days.forEach(d => grid[d] = new Array(timeBlocks.length).fill(null));
-
-                // Vybereme jen viditelné předměty
-                subjects.value.filter(s => s.visible).forEach(subject => {
-                    subject.classes.forEach(cls => {
-                        let span = cls.end - cls.start + 1;
-                        
-                        // Zapsání startovní buňky
-                        if (grid[cls.day][cls.start] === null) {
-                            grid[cls.day][cls.start] = { subject, cls, span };
-                            // Zapsání zástupných tokenů pro sloučení buněk (colspan)
-                            for (let i = 1; i < span; i++) {
-                                if (grid[cls.day][cls.start + i] === null) {
-                                    grid[cls.day][cls.start + i] = 'skip';
-                                }
-                            }
-                        }
-                    });
-                });
-                return grid;
-            });
-
-            // Přidání nové akce do rozvrhu (obsahuje kontrolu kolizí a validity dat)
-            const addClass = () => {
-                errorMsg.value = "";
-                
-                if (newForm.value.end < newForm.value.start) {
-                    errorMsg.value = "Konec bloku nesmí předcházet začátku.";
-                    return;
-                }
-
-                // Kontrola překryvu
-                let overlap = false;
-                subjects.value.filter(s => s.visible).forEach(subject => {
-                    subject.classes.forEach(cls => {
-                        if (cls.day === newForm.value.day) {
-                            if (newForm.value.start <= cls.end && newForm.value.end >= cls.start) {
-                                overlap = true;
-                            }
-                        }
-                    });
-                });
-
-                if (overlap) {
-                    errorMsg.value = "Detekována kolize! V tento čas již máte (viditelný) předmět.";
-                    return;
-                }
-
-                const targetSubject = subjects.value.find(s => s.id === newForm.value.subjectId);
-                if (targetSubject) {
-                    targetSubject.classes.push({
-                        id: Date.now(),
-                        type: newForm.value.type,
-                        room: newForm.value.room,
-                        day: newForm.value.day,
-                        start: newForm.value.start,
-                        end: newForm.value.end
-                    });
-                    
-                    // Reset drobných hodnot ve formuláři, zachování předmětu pro rychlé vkládání
-                    newForm.value.room = "";
-                }
+            // Vrací pouze ty možnosti pro daný den, u kterých je zapnutá viditelnost předmětu
+            const getVisibleOptions = (dayName) => {
+                return enrichedOptions.value.filter(opt => opt.day === dayName && opt.subject && opt.subject.visible);
             };
 
-            const removeClass = (subjectId, classId) => {
-                const subject = subjects.value.find(s => s.id === subjectId);
-                if (subject) {
-                    subject.classes = subject.classes.filter(c => c.id !== classId);
-                }
+            const clearSelection = () => {
+                allOptions.value.forEach(opt => opt.selected = false);
             };
 
-            // Funkce pro zachování čitelnosti textu (černý vs. bílý) na základě HEX barvy pozadí
             const getContrastYIQ = (hexcolor) => {
                 hexcolor = hexcolor.replace("#", "");
                 var r = parseInt(hexcolor.substr(0,2),16);
                 var g = parseInt(hexcolor.substr(2,2),16);
                 var b = parseInt(hexcolor.substr(4,2),16);
                 var yiq = ((r*299)+(g*587)+(b*114))/1000;
-                return (yiq >= 128) ? 'black' : 'white';
+                return (yiq >= 128) ? '#000000' : '#ffffff';
             };
 
             return {
-                timeBlocks, days, subjects, newForm, addClass, removeClass, computedGrid, errorMsg, getContrastYIQ
+                timeBlocks, days, subjects, getVisibleOptions, clearSelection, getContrastYIQ
             };
         }
     }).mount('#app');
